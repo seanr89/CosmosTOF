@@ -94,5 +94,16 @@ namespace ToFConsole
         {
 
         }
+
+        #region ToF Creation
+
+        private TestOrderForm CreateBasicForm()
+        {
+            var record = new TestOrderForm(){
+                
+            }
+        }
+
+        #endregion
     }
 }
