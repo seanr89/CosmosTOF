@@ -11,6 +11,9 @@ namespace ToFConsole
         public Guid Id { get; set; }
         public string Profile { get; private set; }
         public DateTime Date { get; private set; }
+        //New records being included
+        public DateTime SwabCollectionDate { get; private set; }
+        public DateTime ArrivalDate { get; private set; }
         public string Source { get; private set; }
 
         //Planned new content for testing
