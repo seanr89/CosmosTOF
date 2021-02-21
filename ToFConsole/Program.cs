@@ -35,7 +35,7 @@ namespace ToFConsole
             {
                 Console.WriteLine("Beginning operations...\n");
                 Program p = new Program();
-                //await p.GetStartedDemoAsync();
+                await p.InitialiseCosmosDbAndContainer();
 
             }
             catch (CosmosException de)
@@ -84,7 +84,7 @@ namespace ToFConsole
         private async Task CreateContainerAsync()
         {
             // Create a new container
-            this.container = await this.database.CreateContainerIfNotExistsAsync(containerId, "/LastName", 400);
+            this.container = await this.database.CreateContainerIfNotExistsAsync(containerId, "/Type", 400);
             Console.WriteLine("Created Container: {0}\n", this.container.Id);
         }
 
@@ -100,13 +100,13 @@ namespace ToFConsole
             try
             {
                 // Read the item to see if it exists.  
-                ItemResponse<TestOrderForm> recordResponse = await this.container.ReadItemAsync<TestOrderForm>(baseRecord.Id.ToString(), new PartitionKey(baseRecord.GetType().Name));
+                ItemResponse<TestOrderForm> recordResponse = await this.container.ReadItemAsync<TestOrderForm>(baseRecord.Id.ToString(), new PartitionKey(baseRecord.Type));
                 Console.WriteLine("Item in database with id: {0} already exists\n", recordResponse.Resource.Id);
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
                 // Create an item in the container representing the Andersen family. Note we provide the value of the partition key for this item, which is "Andersen"
-                ItemResponse<TestOrderForm> tofBaseResponse = await this.container.CreateItemAsync<TestOrderForm>(baseRecord, new PartitionKey(baseRecord.GetType().Name));
+                ItemResponse<TestOrderForm> tofBaseResponse = await this.container.CreateItemAsync<TestOrderForm>(baseRecord, new PartitionKey(baseRecord.Type));
 
                 // Note that after creating the item, we can access the body of the item with the Resource property off the ItemResponse. We can also access the RequestCharge property to see the amount of RUs consumed on this request.
                 Console.WriteLine("Created item in database with id: {0} Operation consumed {1} RUs.\n", tofBaseResponse.Resource.Id, tofBaseResponse.RequestCharge);
@@ -115,13 +115,13 @@ namespace ToFConsole
             try
             {
                 // Read the item to see if it exists.  
-                ItemResponse<TestOrderForm> recordResponse = await this.container.ReadItemAsync<TestOrderForm>(healthRec.Id.ToString(), new PartitionKey(healthRec.GetType().Name));
+                ItemResponse<TestOrderForm> recordResponse = await this.container.ReadItemAsync<TestOrderForm>(healthRec.Id.ToString(), new PartitionKey(healthRec.Type));
                 Console.WriteLine("Item in database with id: {0} already exists\n", recordResponse.Resource.Id);
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
                 // Create an item in the container representing the Andersen family. Note we provide the value of the partition key for this item, which is "Andersen"
-                ItemResponse<TestOrderForm> healthBaseResponse = await this.container.CreateItemAsync<TestOrderForm>(healthRec, new PartitionKey(healthRec.GetType().Name));
+                ItemResponse<TestOrderForm> healthBaseResponse = await this.container.CreateItemAsync<TestOrderForm>(healthRec, new PartitionKey(healthRec.Type));
                 // Note that after creating the item, we can access the body of the item with the Resource property off the ItemResponse. We can also access the RequestCharge property to see the amount of RUs consumed on this request.
                 Console.WriteLine("Created item in database with id: {0} Operation consumed {1} RUs.\n", healthBaseResponse.Resource.Id, healthBaseResponse.RequestCharge);
             }
@@ -157,5 +157,21 @@ namespace ToFConsole
         }
 
         #endregion
+
+        // <DeleteDatabaseAndCleanupAsync>
+        /// <summary>
+        /// Delete the database and dispose of the Cosmos Client instance
+        /// </summary>
+        private async Task DeleteDatabaseAndCleanupAsync()
+        {
+            DatabaseResponse databaseResourceResponse = await this.database.DeleteAsync();
+            // Also valid: await this.cosmosClient.Databases["FamilyDatabase"].DeleteAsync();
+
+            Console.WriteLine("Deleted Database: {0}\n", this.databaseId);
+
+            //Dispose of CosmosClient
+            this.cosmosClient.Dispose();
+        }
+        // </DeleteDatabaseAndCleanupAsync>
     }
 }

@@ -15,14 +15,15 @@ namespace ToFConsole
 
         //Planned new content for testing
         public Dictionary<string, CustomContent> MetaData { get; set; } = new Dictionary<string, CustomContent>();
+        public string Type => this.GetType().Name;
 
         private TestOrderForm()
         {
-
         }
 
-        public TestOrderForm(string profile, DateTime date, string source)
+        public TestOrderForm(string profile, DateTime date, string source) : base()
         {
+            Id = Guid.NewGuid();
             Profile = profile;
             Date = date;
             Source = source;
