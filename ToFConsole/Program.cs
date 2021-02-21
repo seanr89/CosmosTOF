@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Net;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ namespace ToFConsole
 {
     class Program
     {
+        #region settings
         // The Azure Cosmos DB endpoint for running this sample.
         private static readonly string EndpointUri = ConfigurationManager.AppSettings["EndPointUri"];
 
@@ -27,6 +29,8 @@ namespace ToFConsole
         private string databaseId = "TestOrderForms";
         private string containerId = "Items";
 
+        #endregion
+
         //<Main>
         static async Task Main(string[] args)
         {
@@ -34,8 +38,9 @@ namespace ToFConsole
             try
             {
                 Console.WriteLine("Beginning operations...\n");
+                bool delete = Confirm("Do you want to clean the DB?");
                 Program p = new Program();
-                await p.InitialiseCosmosDbAndContainer();
+                await p.InitialiseCosmosDbAndContainer(delete);
 
             }
             catch (CosmosException de)
@@ -54,13 +59,19 @@ namespace ToFConsole
             }
         }
 
-        public async Task InitialiseCosmosDbAndContainer()
+        public async Task InitialiseCosmosDbAndContainer(bool delete)
         {
             // Create a new instance of the Cosmos Client
             this.cosmosClient = new CosmosClient(EndpointUri, PrimaryKey, new CosmosClientOptions() { ApplicationName = "CosmosDBDotnetQuickstart" });
             await this.CreateDatabaseAsync();
             await this.CreateContainerAsync();
-            await this.AddItemsToContainerAsync();
+            //await this.AddItemsToContainerAsync();
+
+            await this.QueryItemsAsync();
+            await this.QueryItemsAsync("HealthTestOrderForm");
+
+            if (delete)
+                await this.DeleteDatabaseAndCleanupAsync();
         }
 
         // <CreateDatabaseAsync>
@@ -158,6 +169,34 @@ namespace ToFConsole
 
         #endregion
 
+        // <QueryItemsAsync>
+        /// <summary>
+        /// Run a query (using Azure Cosmos DB SQL syntax) against the container
+        /// Including the partition key value of Type in the WHERE filter results in a more efficient query
+        /// </summary>
+        private async Task QueryItemsAsync(string type = "TestOrderForm")
+        {
+            var sqlQueryText = $"SELECT * FROM c WHERE c.Type = '{type}'";
+
+            Console.WriteLine("Running query: {0}\n", sqlQueryText);
+
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            FeedIterator<TestOrderForm> queryResultSetIterator = this.container.GetItemQueryIterator<TestOrderForm>(queryDefinition);
+
+            List<TestOrderForm> records = new List<TestOrderForm>();
+
+            while (queryResultSetIterator.HasMoreResults)
+            {
+                FeedResponse<TestOrderForm> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                foreach (TestOrderForm record in currentResultSet)
+                {
+                    //families.Add(family);
+                    Console.WriteLine("\tRead {0}\n", record.ToString());
+                }
+            }
+        }
+        // </QueryItemsAsync>
+
         // <DeleteDatabaseAndCleanupAsync>
         /// <summary>
         /// Delete the database and dispose of the Cosmos Client instance
@@ -173,5 +212,26 @@ namespace ToFConsole
             this.cosmosClient.Dispose();
         }
         // </DeleteDatabaseAndCleanupAsync>
+
+        /// <summary>
+        /// Test method to handle Yes/No selection on console apps
+        /// </summary>
+        /// <param name="title">The text to display on the read message</param>
+        /// <returns></returns>
+        public static bool Confirm(string title)
+        {
+            ConsoleKey response;
+            do
+            {
+                Console.Write($"{ title } [y/n] ");
+                response = Console.ReadKey(false).Key;
+                if (response != ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                }
+            } while (response != ConsoleKey.Y && response != ConsoleKey.N);
+
+            return (response == ConsoleKey.Y);
+        }
     }
 }

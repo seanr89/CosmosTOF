@@ -28,5 +28,14 @@ namespace ToFConsole
             Date = date;
             Source = source;
         }
+
+        /// <summary>
+        /// overridding the ToString to support easier string conversion for base content
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"[{Id}] : {Profile}";
+        }
     }
 }
