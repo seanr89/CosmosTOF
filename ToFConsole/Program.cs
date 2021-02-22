@@ -55,7 +55,7 @@ namespace ToFConsole
             finally
             {
                 Console.WriteLine("End of demo, press any key to exit.");
-                Console.ReadKey();
+                //Console.ReadKey();
             }
         }
 
@@ -65,6 +65,7 @@ namespace ToFConsole
             this.cosmosClient = new CosmosClient(EndpointUri, PrimaryKey, new CosmosClientOptions() { ApplicationName = "CosmosDBDotnetQuickstart" });
             await this.CreateDatabaseAsync();
             await this.CreateContainerAsync();
+            await this.TryCreateSampleTubes();
             //await this.AddItemsToContainerAsync();
 
             await this.QueryItemsAsync();
@@ -73,6 +74,8 @@ namespace ToFConsole
             if (delete)
                 await this.DeleteDatabaseAndCleanupAsync();
         }
+
+        #region DB + Container Setup
 
         // <CreateDatabaseAsync>
         /// <summary>
@@ -97,6 +100,30 @@ namespace ToFConsole
             // Create a new container
             this.container = await this.database.CreateContainerIfNotExistsAsync(containerId, "/Type", 400);
             Console.WriteLine("Created Container: {0}\n", this.container.Id);
+        }
+
+        #endregion
+
+        private async Task TryCreateSampleTubes()
+        {
+            var sqlQueryText = $"SELECT * FROM c WHERE c.Type = 'SampleTube'";
+            //Console.WriteLine("Running query: {0}\n", sqlQueryText);
+
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            FeedIterator<SampleTube> queryResultSetIterator = this.container.GetItemQueryIterator<SampleTube>(queryDefinition);
+            List<SampleTube> records = new List<SampleTube>();
+            if (!queryResultSetIterator.HasMoreResults)
+            {
+                var purple = new SampleTube("Purple", "Blood", 50.0);
+                ItemResponse<SampleTube> responsePurp = await this.container.CreateItemAsync<SampleTube>(purple, new PartitionKey(purple.Type));
+                var red = new SampleTube("Red", "Urine", 75.5);
+                ItemResponse<SampleTube> responseRed = await this.container.CreateItemAsync<SampleTube>(red, new PartitionKey(red.Type));
+                var grey = new SampleTube("Grey", "Blood", 55.0);
+                ItemResponse<SampleTube> responseGrey = await this.container.CreateItemAsync<SampleTube>(grey, new PartitionKey(grey.Type));
+                var green = new SampleTube("Green", "Serum", 25.0);
+                ItemResponse<SampleTube> responseGreen = await this.container.CreateItemAsync<SampleTube>(green, new PartitionKey(green.Type));
+            }
+
         }
 
         // <AddItemsToContainerAsync>
